@@ -1,15 +1,10 @@
 # Schedule → ICS
 
-Pull your school's web calendar straight out of the browser and into a proper `.ics` file — correct Eastern time, DST-aware, with reminders built in. No login credentials handled, no server, no data leaves your browser.
-
-- **Run in:** Browser console
-- **Output:** `schedule.ics`
-- **Timezone:** America/New_York (Philadelphia)
-- **Dependencies:** none
+Pull your **Inside PDM Student Schedule** straight out of the browser and into a proper `.ics` file - with reminders built in.
 
 ## What this actually does
 
-Your school's calendar page renders one work-week at a time and has no export button. This script drives the page itself — clicking "next week" over and over, reading each event off the grid, then assembling a single calendar file you can import anywhere.
+This script operates the page itself — clicking "next week" over and over. It is reading each event off the grid, then exporting it into a single calendar file you can import anywhere.
 
 | Included | Handling |
 |---|---|
@@ -20,13 +15,13 @@ Your school's calendar page renders one work-week at a time and has no export bu
 
 ## Instructions
 
-1. **Open your calendar page.** Log in and land on the work-week view you'd normally page through. The script starts scraping from whatever week is currently on screen, so start from the earliest week you want included.
+1. **Open your calendar page.** Log in and land on the work-week view you'd normally page through. **NOTE: The script starts scraping from whatever week is currently on screen, so start from the first week of classes**
 
 2. **Open the browser console.** Right-click anywhere on the page → **Inspect** → click the **Console** tab. On Mac you can also use `Cmd+Option+J` (Chrome) or `Cmd+Option+K` (Firefox). On Windows, `Ctrl+Shift+J`.
 
 3. **Adjust the config (optional).** Copy the script below and skim the config block at the top — set how many weeks forward to scrape and whether you want the reminder alerts. See the [Configuration](#configuration) section for what each option does.
 
-4. **Paste and run.** Paste the whole script into the console and hit `Enter`. The calendar will visibly flip forward week by week — **don't click or navigate away while it's running.** It takes roughly 1.2 seconds per week.
+4. **Paste and run.** Paste the whole script into the console and hit `Enter`. The calendar will visibly flip forward week by week — **don't click or navigate away while it's running.**
 
 5. **Collect the file.** When it finishes, the console logs a count of events found and your browser downloads `schedule.ics` automatically. Import that file into Apple Calendar, Google Calendar, or Outlook.
 
@@ -34,7 +29,7 @@ Your school's calendar page renders one work-week at a time and has no export bu
 
 ## The script
 
-Paste this in full. It's self-contained — no external libraries, no build step.
+Paste this in full.
 
 ```javascript
 (async function () {
@@ -281,7 +276,7 @@ Make sure you're on the actual calendar page (not a login screen or a redirect) 
 **Console says "Scraped 0 unique events"**
 This means the script couldn't find any event blocks on the page. Usually one of two things:
 - You're on a week with no scheduled events — try starting from a week you know has classes.
-- The calendar page's layout changed. This script reads specific CSS class names (`.wc-cal-event`, `.wc-day-column-inner`, etc.) — if the school's calendar system was updated, those may no longer match. Right-click a visible event → Inspect, and compare the class names to what's referenced near the top of `parseWeek()`.
+- The calendar page's layout changed. This script reads specific CSS class names (`.wc-cal-event`, `.wc-day-column-inner`, etc.) — if the school's calendar system was updated, those may no longer match. Right-click a visible event → Inspect, and compare the class names to what's referenced near the top of `parseWeek()`. This may mean that the script needs an update. 
 
 **Some weeks are missing events**
 Usually a timing issue — the script clicked "next" before the page finished loading that week's data. Increase `WAIT_MS` (try `2000`) and run again.
@@ -299,10 +294,8 @@ Confirm `ENABLE_STANDARD_ALERT` / `ENABLE_EXAM_QUIZ_ALERT` were `true` when you 
 Some browsers block automatic downloads triggered from the console by default. Look for a blocked-download icon in the address bar and allow it, then re-run the script — it will re-generate and re-trigger the download.
 
 **Exams or quizzes aren't getting the extra 1-week reminder**
-The script only tags an event as an exam/quiz if the word "exam" or "quiz" appears in its event type text on the calendar page. If your school labels these differently (e.g. "Assessment" or "Practical"), the detection in `parseWeek()` needs the matching keyword added to the `isExam` / `isQuiz` checks.
+The script only tags an event as an exam/quiz if the word "exam" or "quiz" appears in its event type text on the calendar page. If your school labels these differently (e.g. "Assessment" or "Practical"), the detection in `parseWeek()` needs the matching keyword added to the `isExam` / `isQuiz` checks. You may have to just update those manually in your calandar after your import.
 
 ---
 
-*Still stuck? Copy the exact console output (including any red error text) along with the HTML of one event block from Inspect — that's usually enough to pinpoint the fix.*
-
-*Runs entirely client-side. No data is sent anywhere — the file is built and downloaded in your own browser.*
+Hope this helps
