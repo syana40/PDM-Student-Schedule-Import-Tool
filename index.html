@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Schedule → ICS — Console Export Tool</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F6F2E7;
+    --paper-2:#EFE9D8;
+    --ink:#242019;
+    --ink-soft:#5B5445;
+    --navy:#1F2E46;
+    --navy-2:#2C4266;
+    --rust:#9C4630;
+    --rust-soft:#F1DED4;
+    --gold:#B4872C;
+    --line:#DCD3BC;
+    --ok:#3F6B4A;
+    --radius:3px;
+  }
+
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    font-size:16px;
+    line-height:1.6;
+  }
+
+  ::selection{ background:var(--gold); color:var(--paper); }
+
+  a{ color:var(--navy-2); }
+  a:focus-visible, button:focus-visible, summary:focus-visible{
+    outline:2px solid var(--gold);
+    outline-offset:2px;
+  }
+
+  h1,h2,h3{
+    font-family:'Lora',serif;
+    font-weight:600;
+    color:var(--navy);
+    margin:0 0 .4em;
+  }
+
+  .wrap{
+    max-width:760px;
+    margin:0 auto;
+    padding:0 24px;
+  }
+
+  /* ---------- Header / masthead ---------- */
+  .masthead{
+    border-bottom:3px double var(--navy);
+    padding:56px 0 28px;
+    position:relative;
+  }
+  .eyebrow{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--rust);
+    margin-bottom:14px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .eyebrow::before{
+    content:"";
+    width:22px; height:1px;
+    background:var(--rust);
+    display:inline-block;
+  }
+  .masthead h1{
+    font-size:clamp(2rem, 4.2vw, 2.9rem);
+    line-height:1.08;
+    max-width:16ch;
+  }
+  .masthead p{
+    max-width:52ch;
+    color:var(--ink-soft);
+    font-size:1.05rem;
+    margin-top:14px;
+  }
+
+  .seal{
+    position:absolute;
+    top:52px; right:24px;
+    width:104px; height:104px;
+    border-radius:50%;
+    border:1.5px solid var(--navy);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transform:rotate(-9deg);
+  }
+  .seal-inner{
+    width:86px; height:86px;
+    border-radius:50%;
+    border:1px dashed var(--gold);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    font-family:'JetBrains Mono',monospace;
+    font-size:9.5px;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    color:var(--navy);
+    padding:8px;
+  }
+  @media (max-width:640px){ .seal{ display:none; } }
+
+  .meta-row{
+    display:flex; flex-wrap:wrap; gap:10px 22px;
+    margin-top:24px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:12.5px;
+    color:var(--ink-soft);
+  }
+  .meta-row span b{ color:var(--navy); font-weight:600; }
+
+  /* ---------- Section chrome ---------- */
+  section{
+    padding:44px 0;
+    border-bottom:1px solid var(--line);
+  }
+  section:last-of-type{ border-bottom:none; }
+
+  .section-label{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--gold);
+    margin-bottom:6px;
+  }
+
+  section h2{ font-size:1.5rem; }
+  section > p{ color:var(--ink-soft); }
+
+  code, pre, kbd{ font-family:'JetBrains Mono',monospace; }
+  code{
+    background:var(--paper-2);
+    padding:.14em .4em;
+    border-radius:var(--radius);
+    font-size:.88em;
+    color:var(--navy);
+  }
+  kbd{
+    background:var(--navy);
+    color:var(--paper);
+    padding:.1em .5em;
+    border-radius:var(--radius);
+    font-size:.82em;
+  }
+
+  /* ---------- Numbered steps (real sequence) ---------- */
+  .steps{
+    counter-reset:step;
+    margin-top:28px;
+    display:flex;
+    flex-direction:column;
+    gap:26px;
+  }
+  .step{
+    display:grid;
+    grid-template-columns:44px 1fr;
+    gap:16px;
+  }
+  .step-num{
+    counter-increment:step;
+    font-family:'Lora',serif;
+    font-weight:700;
+    font-size:1.4rem;
+    color:var(--rust);
+    line-height:1;
+    padding-top:2px;
+  }
+  .step-num::before{ content: counter(step, decimal-leading-zero); }
+  .step-body h3{
+    font-family:'Inter',sans-serif;
+    font-size:1.02rem;
+    font-weight:600;
+    color:var(--ink);
+    margin-bottom:6px;
+  }
+  .step-body p{ margin:0 0 8px; color:var(--ink-soft); }
+  .step-body p:last-child{ margin-bottom:0; }
+
+  /* ---------- Code panel ---------- */
+  .code-panel{
+    margin-top:16px;
+    border:1px solid var(--navy);
+    border-radius:var(--radius);
+    overflow:hidden;
+    background:#161E2E;
+  }
+  .code-panel-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:10px 14px;
+    background:var(--navy);
+    color:var(--paper);
+  }
+  .code-panel-head .fname{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12.5px;
+    letter-spacing:.02em;
+    display:flex; align-items:center; gap:8px;
+  }
+  .dots{ display:flex; gap:5px; }
+  .dots span{ width:8px; height:8px; border-radius:50%; background:rgba(246,242,231,.35); }
+
+  .copy-btn{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    background:var(--rust);
+    color:var(--paper);
+    border:none;
+    padding:6px 12px;
+    border-radius:var(--radius);
+    cursor:pointer;
+    transition:background .15s ease;
+  }
+  .copy-btn:hover{ background:#b0553b; }
+  .copy-btn.copied{ background:var(--ok); }
+
+  pre.code-body{
+    margin:0;
+    padding:18px 16px;
+    overflow-x:auto;
+    color:#E8E3D3;
+    font-size:12.6px;
+    line-height:1.55;
+    max-height:420px;
+    overflow-y:auto;
+  }
+
+  /* ---------- Config table ---------- */
+  table.config{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:18px;
+    font-size:14.5px;
+  }
+  table.config th{
+    text-align:left;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11.5px;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    border-bottom:1.5px solid var(--navy);
+    padding:0 10px 8px 0;
+  }
+  table.config td{
+    padding:11px 10px 11px 0;
+    border-bottom:1px solid var(--line);
+    vertical-align:top;
+  }
+  table.config td:first-child{
+    font-family:'JetBrains Mono',monospace;
+    color:var(--rust);
+    white-space:nowrap;
+    font-size:13px;
+  }
+  table.config td:last-child{ color:var(--ink-soft); }
+
+  /* ---------- Troubleshooting / office hours ---------- */
+  .qa{
+    margin-top:22px;
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    overflow:hidden;
+    background:#FBF9F1;
+  }
+  details{
+    border-bottom:1px solid var(--line);
+  }
+  details:last-child{ border-bottom:none; }
+  summary{
+    cursor:pointer;
+    list-style:none;
+    padding:16px 18px;
+    display:flex;
+    gap:12px;
+    align-items:baseline;
+    font-weight:600;
+    color:var(--navy);
+    font-size:.98rem;
+  }
+  summary::-webkit-details-marker{ display:none; }
+  summary .q-tag{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    color:var(--rust);
+    flex-shrink:0;
+  }
+  summary::after{
+    content:"+";
+    margin-left:auto;
+    font-family:'JetBrains Mono',monospace;
+    color:var(--ink-soft);
+    font-size:1.1rem;
+  }
+  details[open] summary::after{ content:"–"; }
+  .qa-body{
+    padding:0 18px 18px 46px;
+    color:var(--ink-soft);
+    font-size:14.5px;
+  }
+  .qa-body code{ font-size:.86em; }
+  .qa-body ul{ margin:8px 0 0; padding-left:18px; }
+  .qa-body li{ margin-bottom:6px; }
+
+  /* ---------- Callouts ---------- */
+  .callout{
+    border-left:3px solid var(--rust);
+    background:var(--rust-soft);
+    padding:14px 16px;
+    border-radius:0 var(--radius) var(--radius) 0;
+    font-size:14.5px;
+    color:#5F3122;
+    margin-top:18px;
+  }
+  .callout b{ color:#4A2419; }
+  .callout.good{
+    border-left-color:var(--ok);
+    background:#E4EEE4;
+    color:#274B31;
+  }
+  .callout.good b{ color:#1E3A27; }
+
+  footer{
+    padding:36px 0 60px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    color:var(--ink-soft);
+    display:flex;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:10px;
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    html{ scroll-behavior:auto; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <div class="eyebrow">Console Export Utility</div>
+    <h1>Schedule → ICS</h1>
+    <p>Pull your web calendar straight out of the browser and into a proper <code>.ics</code> file — correct Eastern time, DST-aware, with reminders built in. No login, no server, no data leaves your browser.</p>
+
+    <div class="seal">
+      <div class="seal-inner">Sched<br>→<br>ICS<br>v1</div>
+    </div>
+
+    <div class="meta-row">
+      <span><b>Run in:</b> Browser console</span>
+      <span><b>Output:</b> schedule.ics</span>
+      <span><b>Timezone:</b> America/New_York</span>
+      <span><b>Dependencies:</b> none</span>
+    </div>
+  </header>
+
+  <!-- ================= WHAT IT DOES ================= -->
+  <section id="overview">
+    <div class="section-label">Overview</div>
+    <h2>What this actually does</h2>
+    <p>Your school's calendar page renders one work-week at a time and has no export button. This script drives the page itself — clicking "next week" over and over, reading each event off the grid, then assembling a single calendar file you can import anywhere.</p>
+
+    <table class="config" style="margin-top:24px;">
+      <tr><th>Included</th><th>Handling</th></tr>
+      <tr><td>Class times &amp; locations</td><td style="color:var(--ink)">Read directly from each event block, including room number</td></tr>
+      <tr><td>Quizzes &amp; exams</td><td style="color:var(--ink)">Auto-detected from event text and tagged <code>QUIZ:</code> / <code>EXAM:</code> in the title</td></tr>
+      <tr><td>Timezone</td><td style="color:var(--ink)">Tagged as <code>America/New_York</code> with a full <code>VTIMEZONE</code> block — displays correctly wherever you are, EDT or EST</td></tr>
+      <tr><td>Reminders</td><td style="color:var(--ink)">10 minutes before every event, plus 1 week before exams/quizzes (both configurable)</td></tr>
+    </table>
+  </section>
+
+  <!-- ================= INSTRUCTIONS ================= -->
+  <section id="instructions">
+    <div class="section-label">Instructions</div>
+    <h2>Running it</h2>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num"></div>
+        <div class="step-body">
+          <h3>Open your calendar page</h3>
+          <p>Log in and land on the work-week view you'd normally page through. The script starts scraping from whatever week is currently on screen, so start from the earliest week you want included.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num"></div>
+        <div class="step-body">
+          <h3>Open the browser console</h3>
+          <p>Right-click anywhere on the page → <b>Inspect</b> → click the <b>Console</b> tab. On Mac you can also use <kbd>Cmd+Option+J</kbd> (Chrome) or <kbd>Cmd+Option+K</kbd> (Firefox). On Windows, <kbd>Ctrl+Shift+J</kbd>.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num"></div>
+        <div class="step-body">
+          <h3>Adjust the config (optional)</h3>
+          <p>Copy the script below and skim the config block at the top — set how many weeks forward to scrape and whether you want the reminder alerts. See the config table further down for what each option does.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num"></div>
+        <div class="step-body">
+          <h3>Paste and run</h3>
+          <p>Paste the whole script into the console and hit <kbd>Enter</kbd>. The calendar will visibly flip forward week by week — <b>don't click or navigate away while it's running.</b> It takes roughly 1.2 seconds per week.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num"></div>
+        <div class="step-body">
+          <h3>Collect the file</h3>
+          <p>When it finishes, the console logs a count of events found and your browser downloads <code>schedule.ics</code> automatically. Import that file into Apple Calendar, Google Calendar, or Outlook.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout">
+      <b>Before you re-import:</b> if you've imported an earlier version of this file before, delete those old events from your calendar first — re-importing without removing the old set will create duplicates.
+    </div>
+  </section>
+
+  <!-- ================= SCRIPT ================= -->
+  <section id="script">
+    <div class="section-label">The script</div>
+    <h2>scrape_schedule.js</h2>
+    <p>Paste this in full. It's self-contained — no external libraries, no build step.</p>
+
+    <div class="code-panel">
+      <div class="code-panel-head">
+        <span class="fname">
+          <span class="dots"><span></span><span></span><span></span></span>
+          scrape_schedule.js
+        </span>
+        <button class="copy-btn" id="copyBtn" type="button">Copy script</button>
+      </div>
+      <pre class="code-body" id="scriptOutput">Loading…</pre>
+    </div>
+  </section>
+
+  <!-- ================= CONFIG ================= -->
+  <section id="config">
+    <div class="section-label">Configuration</div>
+    <h2>Options at the top of the file</h2>
+    <p>Every option lives in one block near the top of the script — change the value, then re-paste and re-run.</p>
+
+    <table class="config">
+      <tr><th>Setting</th><th>Controls</th></tr>
+      <tr><td>WEEKS_FORWARD</td><td>How many weeks ahead of the starting page to scrape. Set this to cover your full term (e.g. <code>20</code> ≈ 5 months).</td></tr>
+      <tr><td>WEEKS_BACK</td><td>How many weeks <i>before</i> the current page to also capture. Leave at <code>0</code> unless you want past weeks included.</td></tr>
+      <tr><td>WAIT_MS</td><td>Delay in milliseconds after each "next week" click, to let the page finish reloading before scraping. Raise this if you notice missing events on a slow connection.</td></tr>
+      <tr><td>SCHOOL_TIMEZONE</td><td>IANA timezone of the school. Preset to <code>America/New_York</code> for Philadelphia.</td></tr>
+      <tr><td>ENABLE_STANDARD_ALERT</td><td><code>true</code>/<code>false</code> — toggles the reminder that fires before every single event.</td></tr>
+      <tr><td>STANDARD_ALERT_MINUTES_BEFORE</td><td>How many minutes before each event that reminder fires. Default <code>10</code>.</td></tr>
+      <tr><td>ENABLE_EXAM_QUIZ_ALERT</td><td><code>true</code>/<code>false</code> — toggles the extra early reminder for events tagged as exams or quizzes.</td></tr>
+      <tr><td>EXAM_QUIZ_ALERT_DAYS_BEFORE</td><td>How many days before an exam/quiz that extra reminder fires. Default <code>7</code>.</td></tr>
+    </table>
+  </section>
+
+  <!-- ================= TROUBLESHOOTING ================= -->
+  <section id="troubleshooting">
+    <div class="section-label">Office hours</div>
+    <h2>Troubleshooting</h2>
+    <p>Common issues and what's usually going on.</p>
+
+    <div class="qa">
+      <details>
+        <summary><span class="q-tag">Q1</span> Nothing downloaded / console shows an error immediately</summary>
+        <div class="qa-body">
+          Make sure you're on the actual calendar page (not a login screen or a redirect) before pasting, and that you pasted the entire script — a partial paste breaks the closing brackets. If your browser strips a warning like <i>"Only paste code you understand"</i>, you may need to type <code>allow pasting</code> into the console first, then paste again.
+        </div>
+      </details>
+
+      <details>
+        <summary><span class="q-tag">Q2</span> Console says "Scraped 0 unique events"</summary>
+        <div class="qa-body">
+          This means the script couldn't find any event blocks on the page. Usually one of two things:
+          <ul>
+            <li>You're on a week with no scheduled events — try starting from a week you know has classes.</li>
+            <li>The calendar page's layout changed. This script reads specific CSS class names (<code>.wc-cal-event</code>, <code>.wc-day-column-inner</code>, etc.) — if the school's calendar system was updated, those may no longer match. Right-click a visible event → Inspect, and compare the class names to what's referenced near the top of <code>parseWeek()</code>.</li>
+          </ul>
+        </div>
+      </details>
+
+      <details>
+        <summary><span class="q-tag">Q3</span> Some weeks are missing events</summary>
+        <div class="qa-body">
+          Usually a timing issue — the script clicked "next" before the page finished loading that week's data. Increase <code>WAIT_MS</code> (try <code>2000</code>) and run again.
+        </div>
+      </details>
+
+      <details>
+        <summary><span class="q-tag">Q4</span> Event times look shifted by a few hours</summary>
+        <div class="qa-body">
+          This means the file lost its timezone tag somewhere along the way — check that <code>DTSTART</code>/<code>DTEND</code> lines in the resulting <code>.ics</code> still read <code>DTSTART;TZID=America/New_York:...</code> and not a bare UTC value. If you hand-edited the file, re-run the script fresh instead of patching it manually.
+        </div>
+      </details>
+
+      <details>
+        <summary><span class="q-tag">Q5</span> Duplicate events after importing again</summary>
+        <div class="qa-body">
+          The script gives each event a fresh, non-deterministic ID on every run, so calendar apps treat a re-import as a brand new set rather than an update. Delete the previously imported events before importing a newer file.
+        </div>
+      </details>
+
+      <details>
+        <summary><span class="q-tag">Q6</span> Reminders aren't showing up in my calendar app</summary>
+        <div class="qa-body">
+          Confirm <code>ENABLE_STANDARD_ALERT</code> / <code>ENABLE_EXAM_QUIZ_ALERT</code> were <code>true</code> when you generated the file. Also check your calendar app's own notification settings — some apps (particularly on iOS) only show alerts if notifications are enabled for the specific calendar the events were imported into.
+        </div>
+      </details>
+
+      <details>
+        <summary><span class="q-tag">Q7</span> The browser blocked the file download</summary>
+        <div class="qa-body">
+          Some browsers block automatic downloads triggered from the console by default. Look for a blocked-download icon in the address bar and allow it, then re-run the script — it will re-generate and re-trigger the download.
+        </div>
+      </details>
+
+      <details>
+        <summary><span class="q-tag">Q8</span> Exams or quizzes aren't getting the extra 1-week reminder</summary>
+        <div class="qa-body">
+          The script only tags an event as an exam/quiz if the word "exam" or "quiz" appears in its event type text on the calendar page. If your school labels these differently (e.g. "Assessment" or "Practical"), the detection in <code>parseWeek()</code> needs the matching keyword added to the <code>isExam</code> / <code>isQuiz</code> checks.
+        </div>
+      </details>
+    </div>
+
+    <div class="callout good">
+      <b>Still stuck?</b> Copy the exact console output (including any red error text) along with the HTML of one event block from Inspect — that's almost always enough to pinpoint the fix.
+    </div>
+  </section>
+
+  <footer>
+    <span>Schedule → ICS · runs entirely client-side</span>
+    <span>No data is sent anywhere — the file is built and downloaded in your own browser</span>
+  </footer>
+
+</div>
+
+<script>
+  const scriptB64 = "KGFzeW5jIGZ1bmN0aW9uICgpIHsKICAvLyAtLS0tIENPTkZJRyAtLS0tCiAgY29uc3QgV0VFS1NfRk9SV0FSRCA9IDIwOyAgIC8vIGhvdyBtYW55IHdlZWtzIGFoZWFkIHRvIHNjcmFwZSBmcm9tIHRvZGF5CiAgY29uc3QgV0VFS1NfQkFDSyA9IDA7ICAgICAgIC8vIGhvdyBtYW55IHdlZWtzIGluIHRoZSBwYXN0IHRvIGFsc28gZ3JhYgogIGNvbnN0IFdBSVRfTVMgPSAxMjAwOyAgICAgICAvLyBkZWxheSBhZnRlciBjbGlja2luZyAibmV4dCIvInByZXZpb3VzIiBmb3IgdGhlIEFKQVggcmVsb2FkCiAgY29uc3QgU0NIT09MX1RJTUVaT05FID0gJ0FtZXJpY2EvTmV3X1lvcmsnOyAvLyBQaGlsYWRlbHBoaWEKCiAgLy8gQWxlcnRzCiAgY29uc3QgRU5BQkxFX1NUQU5EQVJEX0FMRVJUID0gdHJ1ZTsgICAvLyBhbGVydCBiZWZvcmUgZXZlcnkgZXZlbnQKICBjb25zdCBTVEFOREFSRF9BTEVSVF9NSU5VVEVTX0JFRk9SRSA9IDEwOwoKICBjb25zdCBFTkFCTEVfRVhBTV9RVUlaX0FMRVJUID0gdHJ1ZTsgIC8vIGV4dHJhIGFsZXJ0IGJlZm9yZSBleGFtcy9xdWl6emVzIG9ubHkKICBjb25zdCBFWEFNX1FVSVpfQUxFUlRfREFZU19CRUZPUkUgPSA3OwogIC8vIC0tLS0tLS0tLS0tLS0tLS0tCgogIGNvbnN0IGV2ZW50cyA9IFtdOwoKICBmdW5jdGlvbiBwYXJzZVdlZWsoKSB7CiAgICBjb25zdCBkYXlIZWFkZXJzID0ge307CiAgICBkb2N1bWVudC5xdWVyeVNlbGVjdG9yQWxsKCcud2MtZGF5LWNvbHVtbi1oZWFkZXInKS5mb3JFYWNoKHRkID0+IHsKICAgICAgY29uc3QgY2xzID0gWy4uLnRkLmNsYXNzTGlzdF0uZmluZChjID0+IC9ed2MtZGF5LVxkJC8udGVzdChjKSk7CiAgICAgIGlmIChjbHMpIHsKICAgICAgICBjb25zdCBkYXlOdW0gPSBjbHMuc3BsaXQoJy0nKVsyXTsKICAgICAgICBkYXlIZWFkZXJzW2RheU51bV0gPSB0ZC50ZXh0Q29udGVudC50cmltKCk7IC8vIGUuZy4gIk1vbmRheSBBdWcgMTcsIDIwMjYiCiAgICAgIH0KICAgIH0pOwoKICAgIGRvY3VtZW50LnF1ZXJ5U2VsZWN0b3JBbGwoJy53Yy1kYXktY29sdW1uLWlubmVyJykuZm9yRWFjaChjb2wgPT4gewogICAgICBjb25zdCBkYXlDbGFzcyA9IFsuLi5jb2wuY2xhc3NMaXN0XS5maW5kKGMgPT4gL15kYXktXGQkLy50ZXN0KGMpKTsKICAgICAgaWYgKCFkYXlDbGFzcykgcmV0dXJuOwogICAgICBjb25zdCBkYXlOdW0gPSBkYXlDbGFzcy5zcGxpdCgnLScpWzFdOwogICAgICBjb25zdCBkYXRlU3RyID0gZGF5SGVhZGVyc1tkYXlOdW1dOwogICAgICBpZiAoIWRhdGVTdHIpIHJldHVybjsKCiAgICAgIGNvbC5xdWVyeVNlbGVjdG9yQWxsKCcud2MtY2FsLWV2ZW50JykuZm9yRWFjaChldnQgPT4gewogICAgICAgIGNvbnN0IHRpbWVUZXh0ID0gZXZ0LnF1ZXJ5U2VsZWN0b3IoJy53Yy10aW1lJyk/LnRleHRDb250ZW50LnRyaW0oKTsKICAgICAgICBjb25zdCB0aXRsZUVsID0gZXZ0LnF1ZXJ5U2VsZWN0b3IoJy53Yy10aXRsZScpOwogICAgICAgIGlmICghdGltZVRleHQgfHwgIXRpdGxlRWwpIHJldHVybjsKCiAgICAgICAgY29uc3QgcGFydHMgPSB0aXRsZUVsLmlubmVySFRNTAogICAgICAgICAgLnNwbGl0KC88YnJccypcLz8+L2kpCiAgICAgICAgICAubWFwKHAgPT4gcC5yZXBsYWNlKC88W14+XSs+L2csICcnKS50cmltKCkpCiAgICAgICAgICAuZmlsdGVyKEJvb2xlYW4pOwoKICAgICAgICBjb25zdCBjb3Vyc2VDb2RlID0gcGFydHNbMF0gfHwgJyc7CiAgICAgICAgY29uc3QgY291cnNlTmFtZSA9IHBhcnRzWzFdIHx8ICcnOwogICAgICAgIGxldCByb29tID0gJyc7CiAgICAgICAgbGV0IHR5cGUgPSAnJzsKICAgICAgICBjb25zdCBleHRyYSA9IFtdOwoKICAgICAgICBwYXJ0cy5zbGljZSgyKS5mb3JFYWNoKHAgPT4gewogICAgICAgICAgaWYgKC9eUm9vbTovaS50ZXN0KHApKSByb29tID0gcC5yZXBsYWNlKC9eUm9vbTpccyovaSwgJycpLnRyaW0oKTsKICAgICAgICAgIGVsc2UgaWYgKCF0eXBlKSB0eXBlID0gcDsKICAgICAgICAgIGVsc2UgZXh0cmEucHVzaChwKTsKICAgICAgICB9KTsKCiAgICAgICAgY29uc3QgaXNFeGFtID0gL2V4YW0vaS50ZXN0KHR5cGUpIHx8IC9leGFtL2kudGVzdChleHRyYS5qb2luKCcgJykpOwogICAgICAgIGNvbnN0IGlzUXVpeiA9IC9xdWl6L2kudGVzdCh0eXBlKSB8fCAvcXVpei9pLnRlc3QoZXh0cmEuam9pbignICcpKTsKCiAgICAgICAgZXZlbnRzLnB1c2goewogICAgICAgICAgZGF0ZVN0ciwgdGltZVRleHQsIGNvdXJzZUNvZGUsIGNvdXJzZU5hbWUsIHJvb20sIHR5cGUsCiAgICAgICAgICBleHRyYTogZXh0cmEuam9pbignIHwgJyksIGlzRXhhbSwgaXNRdWl6CiAgICAgICAgfSk7CiAgICAgIH0pOwogICAgfSk7CiAgfQoKICBmdW5jdGlvbiB3YWl0Rm9yUmVsb2FkKCkgewogICAgcmV0dXJuIG5ldyBQcm9taXNlKHJlc29sdmUgPT4gc2V0VGltZW91dChyZXNvbHZlLCBXQUlUX01TKSk7CiAgfQoKICBhc3luYyBmdW5jdGlvbiBjbGlja0FuZFdhaXQoc2VsZWN0b3IpIHsKICAgIGNvbnN0IGJ0biA9IGRvY3VtZW50LnF1ZXJ5U2VsZWN0b3Ioc2VsZWN0b3IpOwogICAgaWYgKCFidG4pIHJldHVybiBmYWxzZTsKICAgIGJ0bi5jbGljaygpOwogICAgYXdhaXQgd2FpdEZvclJlbG9hZCgpOwogICAgcmV0dXJuIHRydWU7CiAgfQoKICAvLyBHbyBiYWNrIFdFRUtTX0JBQ0sgd2Vla3MgZmlyc3QKICBmb3IgKGxldCBpID0gMDsgaSA8IFdFRUtTX0JBQ0s7IGkrKykgewogICAgYXdhaXQgY2xpY2tBbmRXYWl0KCcud2MtcHJldicpOwogIH0KCiAgcGFyc2VXZWVrKCk7CiAgZm9yIChsZXQgaSA9IDA7IGkgPCBXRUVLU19GT1JXQVJEICsgV0VFS1NfQkFDSzsgaSsrKSB7CiAgICBjb25zdCBtb3ZlZCA9IGF3YWl0IGNsaWNrQW5kV2FpdCgnLndjLW5leHQnKTsKICAgIGlmICghbW92ZWQpIGJyZWFrOwogICAgcGFyc2VXZWVrKCk7CiAgfQoKICAvLyBEZWR1cGUKICBjb25zdCBzZWVuID0gbmV3IFNldCgpOwogIGNvbnN0IHVuaXF1ZSA9IGV2ZW50cy5maWx0ZXIoZSA9PiB7CiAgICBjb25zdCBrZXkgPSBKU09OLnN0cmluZ2lmeShlKTsKICAgIGlmIChzZWVuLmhhcyhrZXkpKSByZXR1cm4gZmFsc2U7CiAgICBzZWVuLmFkZChrZXkpOwogICAgcmV0dXJuIHRydWU7CiAgfSk7CgogIGNvbnNvbGUubG9nKGBTY3JhcGVkICR7dW5pcXVlLmxlbmd0aH0gdW5pcXVlIGV2ZW50cy5gKTsKCiAgLy8gLS0tLSBCdWlsZCBJQ1MgLS0tLQogIGZ1bmN0aW9uIHRvMjRoKHRpbWVQYXJ0LCBpc1BNKSB7CiAgICBsZXQgW2gsIG1dID0gdGltZVBhcnQuc3BsaXQoJzonKS5tYXAoTnVtYmVyKTsKICAgIGlmIChpc1BNICYmIGggIT09IDEyKSBoICs9IDEyOwogICAgaWYgKCFpc1BNICYmIGggPT09IDEyKSBoID0gMDsKICAgIHJldHVybiB7IGgsIG0gfTsKICB9CgogIGZ1bmN0aW9uIHBhcnNlVGltZVJhbmdlKHRpbWVUZXh0KSB7CiAgICBjb25zdCBbc3RhcnRTdHIsIGVuZFN0cl0gPSB0aW1lVGV4dC5zcGxpdCgnLScpLm1hcChzID0+IHMudHJpbSgpKTsKICAgIGNvbnN0IHN0YXJ0SG91ciA9IHBhcnNlSW50KHN0YXJ0U3RyLnNwbGl0KCc6JylbMF0sIDEwKTsKICAgIGNvbnN0IGVuZEhvdXIgPSBwYXJzZUludChlbmRTdHIuc3BsaXQoJzonKVswXSwgMTApOwogICAgLy8gR3JpZCBydW5zIDdBTS03UE06IGhvdXJzIDctMTEgPSBBTSwgaG91ciAxMiBhbmQgMS02ID0gUE0KICAgIGNvbnN0IHN0YXJ0UE0gPSAhKHN0YXJ0SG91ciA+PSA3ICYmIHN0YXJ0SG91ciA8PSAxMSk7CiAgICBjb25zdCBlbmRQTSA9ICEoZW5kSG91ciA+PSA3ICYmIGVuZEhvdXIgPD0gMTEpOwogICAgcmV0dXJuIHsgc3RhcnQ6IHRvMjRoKHN0YXJ0U3RyLCBzdGFydFBNKSwgZW5kOiB0bzI0aChlbmRTdHIsIGVuZFBNKSB9OwogIH0KCiAgZnVuY3Rpb24gcGFkKG4pIHsgcmV0dXJuIFN0cmluZyhuKS5wYWRTdGFydCgyLCAnMCcpOyB9CgogIC8vIEZvcm1hdCBhIHBsYWluIGxvY2FsIGRhdGUvdGltZSAoc2Nob29sLWxvY2FsLCBlLmcuIFBoaWxhZGVscGhpYSkgZm9yIHVzZQogIC8vIHdpdGggRFRTVEFSVDtUWklEPUFtZXJpY2EvTmV3X1lvcms6Li4uIOKAlCBubyBVVEMgY29udmVyc2lvbiBuZWVkZWQgaGVyZSwKICAvLyBzaW5jZSB0aGUgVlRJTUVaT05FIGJsb2NrIGJlbG93IHRlbGxzIGNhbGVuZGFyIGFwcHMgaG93IHRvIGludGVycHJldCBpdC4KICBmdW5jdGlvbiBmb3JtYXRMb2NhbERhdGUoeWVhciwgbW9udGgsIGRheSwgaG91ciwgbWludXRlKSB7CiAgICByZXR1cm4gYCR7eWVhcn0ke3BhZChtb250aCl9JHtwYWQoZGF5KX1UJHtwYWQoaG91cil9JHtwYWQobWludXRlKX0wMGA7CiAgfQoKICAvLyBWVElNRVpPTkUgYmxvY2sgZGVmaW5pbmcgRURUL0VTVCBzd2l0Y2ggcnVsZXMgZm9yIEFtZXJpY2EvTmV3X1lvcmsKICBjb25zdCBWVElNRVpPTkVfQkxPQ0sgPQogICAgJ0JFR0lOOlZUSU1FWk9ORVxyXG4nICsKICAgICdUWklEOkFtZXJpY2EvTmV3X1lvcmtcclxuJyArCiAgICAnWC1MSUMtTE9DQVRJT046QW1lcmljYS9OZXdfWW9ya1xyXG4nICsKICAgICdCRUdJTjpEQVlMSUdIVFxyXG4nICsKICAgICdUWk9GRlNFVEZST006LTA1MDBcclxuJyArCiAgICAnVFpPRkZTRVRUTzotMDQwMFxyXG4nICsKICAgICdUWk5BTUU6RURUXHJcbicgKwogICAgJ0RUU1RBUlQ6MTk3MDAzMDhUMDIwMDAwXHJcbicgKwogICAgJ1JSVUxFOkZSRVE9WUVBUkxZO0JZTU9OVEg9MztCWURBWT0yU1VcclxuJyArCiAgICAnRU5EOkRBWUxJR0hUXHJcbicgKwogICAgJ0JFR0lOOlNUQU5EQVJEXHJcbicgKwogICAgJ1RaT0ZGU0VURlJPTTotMDQwMFxyXG4nICsKICAgICdUWk9GRlNFVFRPOi0wNTAwXHJcbicgKwogICAgJ1RaTkFNRTpFU1RcclxuJyArCiAgICAnRFRTVEFSVDoxOTcwMTEwMVQwMjAwMDBcclxuJyArCiAgICAnUlJVTEU6RlJFUT1ZRUFSTFk7QllNT05USD0xMTtCWURBWT0xU1VcclxuJyArCiAgICAnRU5EOlNUQU5EQVJEXHJcbicgKwogICAgJ0VORDpWVElNRVpPTkVcclxuJzsKCiAgZnVuY3Rpb24gbWFrZUFsYXJtKHRyaWdnZXJWYWx1ZSkgewogICAgcmV0dXJuIGBCRUdJTjpWQUxBUk1cclxuQUNUSU9OOkRJU1BMQVlcclxuREVTQ1JJUFRJT046UmVtaW5kZXJcclxuVFJJR0dFUjoke3RyaWdnZXJWYWx1ZX1cclxuRU5EOlZBTEFSTVxyXG5gOwogIH0KCiAgLy8gQnVpbGRzIHRoZSBWQUxBUk0gYmxvY2socykgZm9yIG9uZSBldmVudCwgYmFzZWQgb24gdGhlIENPTkZJRyBvcHRpb25zIGFib3ZlOgogIC8vIGEgc3RhbmRhcmQgYWxlcnQgYmVmb3JlIGV2ZXJ5IGV2ZW50LCBwbHVzIGFuIGV4dHJhIGFsZXJ0IGJlZm9yZSBleGFtcy9xdWl6emVzIG9ubHkKICBmdW5jdGlvbiBidWlsZEFsYXJtcyhpc0V4YW0sIGlzUXVpeikgewogICAgbGV0IGFsYXJtcyA9ICcnOwoKICAgIGlmIChFTkFCTEVfU1RBTkRBUkRfQUxFUlQpIHsKICAgICAgYWxhcm1zICs9IG1ha2VBbGFybShgLVBUJHtTVEFOREFSRF9BTEVSVF9NSU5VVEVTX0JFRk9SRX1NYCk7CiAgICB9CgogICAgaWYgKEVOQUJMRV9FWEFNX1FVSVpfQUxFUlQgJiYgKGlzRXhhbSB8fCBpc1F1aXopKSB7CiAgICAgIGFsYXJtcyArPSBtYWtlQWxhcm0oYC1QJHtFWEFNX1FVSVpfQUxFUlRfREFZU19CRUZPUkV9RGApOwogICAgfQoKICAgIHJldHVybiBhbGFybXM7CiAgfQoKICBmdW5jdGlvbiBlc2NhcGVJQ1Moc3RyKSB7CiAgICByZXR1cm4gKHN0ciB8fCAnJykKICAgICAgLnJlcGxhY2UoL1xcL2csICdcXFxcJykKICAgICAgLnJlcGxhY2UoLzsvZywgJ1xcOycpCiAgICAgIC5yZXBsYWNlKC8sL2csICdcXCwnKQogICAgICAucmVwbGFjZSgvXG4vZywgJ1xcbicpOwogIH0KCiAgbGV0IGljcyA9ICdCRUdJTjpWQ0FMRU5EQVJcclxuVkVSU0lPTjoyLjBcclxuUFJPRElEOi0vL1NjaGVkdWxlIEV4cG9ydC8vRU5cclxuQ0FMU0NBTEU6R1JFR09SSUFOXHJcbic7CiAgaWNzICs9IFZUSU1FWk9ORV9CTE9DSzsKCiAgdW5pcXVlLmZvckVhY2goKGUsIGlkeCkgPT4gewogICAgY29uc3QgY2xlYW5EYXRlU3RyID0gZS5kYXRlU3RyLnJlcGxhY2UoL15cdytccy8sICcnKTsgLy8gc3RyaXAgIk1vbmRheSAiIGV0Yy4KICAgIGNvbnN0IGRhdGVPYmogPSBuZXcgRGF0ZShjbGVhbkRhdGVTdHIpOwogICAgaWYgKGlzTmFOKGRhdGVPYmopKSByZXR1cm47CgogICAgY29uc3QgeyBzdGFydCwgZW5kIH0gPSBwYXJzZVRpbWVSYW5nZShlLnRpbWVUZXh0KTsKICAgIGNvbnN0IHkgPSBkYXRlT2JqLmdldEZ1bGxZZWFyKCksIG1vID0gZGF0ZU9iai5nZXRNb250aCgpICsgMSwgZCA9IGRhdGVPYmouZ2V0RGF0ZSgpOwogICAgY29uc3QgZHRTdGFydCA9IGZvcm1hdExvY2FsRGF0ZSh5LCBtbywgZCwgc3RhcnQuaCwgc3RhcnQubSk7CiAgICBjb25zdCBkdEVuZCA9IGZvcm1hdExvY2FsRGF0ZSh5LCBtbywgZCwgZW5kLmgsIGVuZC5tKTsKCiAgICBjb25zdCBwcmVmaXggPSBlLmlzRXhhbSA/ICdFWEFNOiAnIDogZS5pc1F1aXogPyAnUVVJWjogJyA6ICcnOwogICAgY29uc3Qgc3VtbWFyeSA9IGAke3ByZWZpeH0ke2UuY291cnNlQ29kZX0gJHtlLnR5cGUgfHwgJyd9YC50cmltKCk7CiAgICBjb25zdCBkZXNjcmlwdGlvbiA9IFtlLmNvdXJzZU5hbWUsIGUudHlwZSwgZS5leHRyYV0uZmlsdGVyKEJvb2xlYW4pLmpvaW4oJyDigJQgJyk7CgogICAgaWNzICs9ICdCRUdJTjpWRVZFTlRcclxuJzsKICAgIGljcyArPSBgVUlEOiR7ZHRTdGFydH0tJHtpZHh9QHNjaGVkdWxlLWV4cG9ydFxyXG5gOwogICAgaWNzICs9IGBEVFNUQVJUO1RaSUQ9JHtTQ0hPT0xfVElNRVpPTkV9OiR7ZHRTdGFydH1cclxuYDsKICAgIGljcyArPSBgRFRFTkQ7VFpJRD0ke1NDSE9PTF9USU1FWk9ORX06JHtkdEVuZH1cclxuYDsKICAgIGljcyArPSBgU1VNTUFSWToke2VzY2FwZUlDUyhzdW1tYXJ5KX1cclxuYDsKICAgIGljcyArPSBgTE9DQVRJT046JHtlc2NhcGVJQ1MoZS5yb29tKX1cclxuYDsKICAgIGljcyArPSBgREVTQ1JJUFRJT046JHtlc2NhcGVJQ1MoZGVzY3JpcHRpb24pfVxyXG5gOwogICAgaWNzICs9IGJ1aWxkQWxhcm1zKGUuaXNFeGFtLCBlLmlzUXVpeik7CiAgICBpY3MgKz0gJ0VORDpWRVZFTlRcclxuJzsKICB9KTsKCiAgaWNzICs9ICdFTkQ6VkNBTEVOREFSXHJcbic7CgogIGNvbnN0IGJsb2IgPSBuZXcgQmxvYihbaWNzXSwgeyB0eXBlOiAndGV4dC9jYWxlbmRhcicgfSk7CiAgY29uc3QgdXJsID0gVVJMLmNyZWF0ZU9iamVjdFVSTChibG9iKTsKICBjb25zdCBhID0gZG9jdW1lbnQuY3JlYXRlRWxlbWVudCgnYScpOwogIGEuaHJlZiA9IHVybDsKICBhLmRvd25sb2FkID0gJ3NjaGVkdWxlLmljcyc7CiAgZG9jdW1lbnQuYm9keS5hcHBlbmRDaGlsZChhKTsKICBhLmNsaWNrKCk7CiAgZG9jdW1lbnQuYm9keS5yZW1vdmVDaGlsZChhKTsKCiAgY29uc29sZS5sb2coJ0Rvd25sb2FkIHRyaWdnZXJlZDogc2NoZWR1bGUuaWNzJyk7Cn0pKCk7Cg==";
+
+  function decodeScript(b64){
+    const binary = atob(b64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return new TextDecoder('utf-8').decode(bytes);
+  }
+
+  const scriptText = decodeScript(scriptB64);
+  document.getElementById('scriptOutput').textContent = scriptText;
+
+  const copyBtn = document.getElementById('copyBtn');
+  copyBtn.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(scriptText);
+      copyBtn.textContent = 'Copied';
+      copyBtn.classList.add('copied');
+      setTimeout(() => {
+        copyBtn.textContent = 'Copy script';
+        copyBtn.classList.remove('copied');
+      }, 1800);
+    } catch (err) {
+      copyBtn.textContent = 'Select & copy manually';
+    }
+  });
+</script>
+
+</body>
+</html>
