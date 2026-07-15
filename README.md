@@ -1,6 +1,6 @@
 # Schedule → ICS
 
-A browser console script that scrapes a school's web calendar and exports it as an `.ics` file — correct Eastern time (EDT/EST-aware), with reminders built in for classes, quizzes, and exams.
+A browser console script that scrapes Inside PDM Student Scedule's web calendar and exports it as an `.ics` file
 
 **Live instructions page:** enable GitHub Pages on this repo (Settings → Pages) and open the published URL — it has full setup steps, the script itself, and troubleshooting.
 
